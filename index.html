@@ -541,14 +541,14 @@
           <!-- 题目2 -->
           <div class="quiz-question">
             <h4>题目 2：1个甜甜圈多少钱？（写 RM）</h4>
-            <input type="text" inputmode="decimal" class="quiz-input" id="q2-input" placeholder="RM" />
+            <input type="text" inputmode="text" class="quiz-input" id="q2-input" placeholder="RM0.00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
             <div class="feedback" id="feedback2"></div>
           </div>
 
           <!-- 题目3 -->
           <div class="quiz-question">
             <h4>题目 3：10个甜甜圈多少钱？（写 RM）</h4>
-            <input type="text" inputmode="decimal" class="quiz-input" id="q3-input" placeholder="RM" />
+            <input type="text" inputmode="text" class="quiz-input" id="q3-input" placeholder="RM0.00" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
             <div class="feedback" id="feedback3"></div>
           </div>
 
@@ -632,6 +632,20 @@
           name: "totalPrice numeric equals unitPrice*targetDonuts (2dp)",
           pass: Math.abs(Number(totalPrice) - Number((Number(unitPrice) * config.targetDonuts).toFixed(2))) < eps,
           actual: { totalPrice, expected: (Number(unitPrice) * config.targetDonuts).toFixed(2) },
+        });
+
+        // Test case 4: mobile/tablet should show full keyboard (inputmode=text)
+        const q2 = document.getElementById("q2-input");
+        const q3 = document.getElementById("q3-input");
+        tests.push({
+          name: "q2-input inputmode is text",
+          pass: !q2 || q2.getAttribute("inputmode") === "text",
+          actual: q2?.getAttribute("inputmode"),
+        });
+        tests.push({
+          name: "q3-input inputmode is text",
+          pass: !q3 || q3.getAttribute("inputmode") === "text",
+          actual: q3?.getAttribute("inputmode"),
         });
 
         // Test case 4: question text has no "问："
@@ -811,9 +825,10 @@
           }
 
           // Q2
-          const q2Value = $("q2-input")?.value.trim() || "";
+          const q2ValueRaw = $("q2-input")?.value ?? "";
+          const q2Value = q2ValueRaw.replace(/\\s+/g, "").toUpperCase();
           const feedback2 = $("feedback2");
-          if (q2Value === `RM${unitPrice}`) {
+          if (q2Value === `RM${unitPrice}`.toUpperCase()) {
             if (feedback2) {
               feedback2.className = "feedback success show";
               feedback2.textContent = `✅ 正确！RM3.90÷6 = RM${unitPrice}`;
@@ -827,9 +842,10 @@
           }
 
           // Q3
-          const q3Value = $("q3-input")?.value.trim() || "";
+          const q3ValueRaw = $("q3-input")?.value ?? "";
+          const q3Value = q3ValueRaw.replace(/\\s+/g, "").toUpperCase();
           const feedback3 = $("feedback3");
-          if (q3Value === `RM${totalPrice}`) {
+          if (q3Value === `RM${totalPrice}`.toUpperCase()) {
             if (feedback3) {
               feedback3.className = "feedback success show";
               feedback3.textContent = `✅ 正确！RM${unitPrice} × 10 = RM${totalPrice}`;
