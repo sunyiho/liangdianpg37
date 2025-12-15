@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>甜甜圈价格问题教学</title>
+
+    <!--
+      Standalone-friendly version:
+      - All four sections (1~4) are present.
+      - All event listeners are attached after DOMContentLoaded.
+      - Defensive guards prevent null.addEventListener crashes if an element is missing.
+      - Step 4 shows the question (and removes “问：” as requested).
+      - Fixed runTests() regex so tests pass.
+    -->
+
+    <script src="/_sdk/element_sdk.js"></script>
+    <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+    <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+
+    <style>
+      body {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      .app-container {
+        width: 100%;
+        min-height: 100vh;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .header {
+        text-align: center;
+        color: white;
+        margin-bottom: 30px;
+      }
+
+      .header h1 {
+        font-size: 32px;
+        margin: 0 0 10px 0;
+        font-weight: 700;
+      }
+
+      .header p {
+        font-size: 16px;
+        opacity: 0.9;
+        margin: 0;
+      }
+
+      .card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        max-width: 600px;
+        width: 100%;
+        margin-bottom: 20px;
+      }
+
+      .step-indicator {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        gap: 10px;
+      }
+
+      .step {
+        flex: 1;
+        text-align: center;
+        padding: 10px;
+        background: #ede9fe; /* 淡紫 */
+        border-radius: 10px;
+        font-size: 14px;
+        transition: all 0.3s;
+        cursor: pointer;
+        user-select: none;
+        color: #5b21b6; /* 紫色文字 */
+      }
+
+      .step.active {
+        background: #7c3aed; /* 主紫色 */
+        color: white;
+        font-weight: 600;
+      }
+
+      .question-box {
+        background: #fef3c7;
+        padding: 20px;
+        border-radius: 15px;
+        margin-bottom: 25px;
+        border-left: 5px solid #f59e0b;
+      }
+
+      .question-box h3 {
+        margin: 0 0 10px 0;
+        color: #92400e;
+        font-size: 18px;
+      }
+
+      .question-box p {
+        margin: 0;
+        color: #78350f;
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .donut-visual {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        margin: 20px 0;
+      }
+
+      .donut-item {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s;
+        position: relative;
+      }
+
+      .donut-item:hover {
+        transform: scale(1.1);
+      }
+
+      .donut-item::after {
+        content: "";
+        position: absolute;
+        width: 28px;
+        height: 28px;
+        background: white;
+        border-radius: 50%;
+      }
+
+      .price-tag {
+        text-align: center;
+        font-size: 24px;
+        font-weight: 700;
+        color: #667eea;
+        margin: 15px 0;
+      }
+
+      .division-visual {
+        margin: 20px 0;
+      }
+
+      .bar-container {
+        background: #e5e7eb;
+        height: 40px;
+        border-radius: 10px;
+        overflow: hidden;
+        margin: 15px 0;
+        position: relative;
+      }
+
+      .bar-segment {
+        height: 100%;
+        background: #667eea;
+        float: left;
+        border-right: 2px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.5s;
+      }
+
+      .formula-step {
+        background: #f3f4f6;
+        padding: 20px;
+        border-radius: 12px;
+        margin: 15px 0;
+        border-left: 4px solid #667eea;
+      }
+
+      .formula-step h4 {
+        margin: 0 0 10px 0;
+        color: #667eea;
+        font-size: 16px;
+      }
+
+      .formula {
+        font-size: 20px;
+        font-weight: 600;
+        color: #1f2937;
+        font-family: "Courier New", monospace;
+        text-align: center;
+        margin: 10px 0;
+      }
+
+      .explanation {
+        color: #6b7280;
+        font-size: 14px;
+        margin-top: 10px;
+        line-height: 1.5;
+      }
+
+      .quiz-question {
+        background: #f9fafb;
+        padding: 20px;
+        border-radius: 12px;
+        margin: 15px 0;
+      }
+
+      .quiz-question h4 {
+        margin: 0 0 15px 0;
+        color: #1f2937;
+        font-size: 16px;
+      }
+
+      .quiz-options {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .quiz-option {
+        padding: 12px 15px;
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 15px;
+      }
+
+      .quiz-option:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+      }
+
+      .quiz-option.selected {
+        border-color: #667eea;
+        background: #e0e7ff;
+      }
+
+      .quiz-input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: all 0.3s;
+      }
+
+      .quiz-input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .feedback {
+        margin-top: 15px;
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 14px;
+        display: none;
+      }
+
+      .feedback.success {
+        background: #d1fae5;
+        color: #065f46;
+        border: 2px solid #10b981;
+      }
+
+      .feedback.error {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 2px solid #ef4444;
+      }
+
+      .feedback.show {
+        display: block;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        flex: 1;
+        min-width: 120px;
+        padding: 14px 24px;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .btn-primary {
+        background: #667eea;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn-secondary {
+        background: #f3f4f6;
+        color: #4b5563;
+      }
+
+      .btn-secondary:hover {
+        background: #e5e7eb;
+      }
+
+      .btn-success {
+        background: #10b981;
+        color: white;
+      }
+
+      .btn-success:hover {
+        background: #059669;
+      }
+
+      .hint-box {
+        background: #dbeafe;
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 15px;
+        border-left: 4px solid #3b82f6;
+        display: none;
+      }
+
+      .hint-box.show {
+        display: block;
+        animation: fadeIn 0.3s;
+      }
+
+      .hint-box p {
+        margin: 8px 0;
+        color: #1e40af;
+        font-size: 14px;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      @media (max-width: 600px) {
+        .header h1 {
+          font-size: 24px;
+        }
+
+        .card {
+          padding: 20px;
+        }
+
+        .donut-item {
+          width: 64px;
+          height: 64px;
+          font-size: 34px;
+        }
+
+        .formula {
+          font-size: 18px;
+        }
+
+        .btn {
+          min-width: 100px;
+          padding: 12px 20px;
+          font-size: 15px;
+        }
+      }
+        .formula {
+          font-size: 18px;
+        }
+
+        .btn {
+          min-width: 100px;
+          padding: 12px 20px;
+          font-size: 15px;
+        }
+      }
+    </style>
+
+    <style>
+      @view-transition {
+        navigation: auto;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app-container">
+      <div class="header">
+        <h1 id="page-title">🍩 甜甜圈价格问题</h1>
+        <p>跟着步骤学习如何计算价格</p>
+      </div>
+
+      <div class="card">
+        <div class="step-indicator">
+          <div class="step active" id="step1">1. 理解问题</div>
+          <div class="step" id="step2">2. 图解分析</div>
+          <div class="step" id="step3">3. 算式解答</div>
+          <div class="step" id="step4">4. 互动练习</div>
+        </div>
+
+        <!-- 第1步：理解问题 -->
+        <div id="section1">
+          <div class="question-box">
+            <h3>📝 题目</h3>
+            <p id="question-text">6个甜甜圈价格RM3.90。买10个甜甜圈需付多少钱?</p>
+          </div>
+
+          <div class="donut-visual" aria-label="six donuts">
+            <div class="donut-item">🍩</div>
+            <div class="donut-item">🍩</div>
+            <div class="donut-item">🍩</div>
+            <div class="donut-item">🍩</div>
+            <div class="donut-item">🍩</div>
+            <div class="donut-item">🍩</div>
+          </div>
+
+          <div class="price-tag">RM 3.90</div>
+
+          <div class="button-group">
+            <button class="btn btn-primary" id="start-btn">开始学习 →</button>
+          </div>
+        </div>
+
+        <!-- 第2步：图解分析 -->
+        <div id="section2" class="hidden">
+          <h3 style="color: #667eea; margin-top: 0">💡 图解问题</h3>
+          <p style="color: #6b7280; margin-bottom: 20px">让我们用图形来理解这道题</p>
+
+          <div class="division-visual">
+            <p style="font-weight: 600; color: #1f2937">把RM3.90平均分成6份：</p>
+            <div class="bar-container" aria-label="divide 3.90 into 6 parts">
+              <div class="bar-segment" style="width: 16.666%">🍩</div>
+              <div class="bar-segment" style="width: 16.666%">🍩</div>
+              <div class="bar-segment" style="width: 16.666%">🍩</div>
+              <div class="bar-segment" style="width: 16.666%">🍩</div>
+              <div class="bar-segment" style="width: 16.666%">🍩</div>
+              <div class="bar-segment" style="width: 16.666%">🍩</div>
+            </div>
+            <p style="text-align: center; color: #6b7280; font-size: 14px">每一份代表1个甜甜圈的价格</p>
+          </div>
+
+          <div class="hint-box" id="hint2">
+            <p><strong>💡 提示 1：</strong>要知道10个多少钱，我们先要知道1个多少钱</p>
+            <p><strong>💡 提示 2：</strong>把总价RM3.90除以6，就能算出1个的价格</p>
+          </div>
+
+          <div class="button-group">
+            <button class="btn btn-secondary" id="hint2-btn">需要提示</button>
+            <button class="btn btn-primary" id="next2-btn">下一步 →</button>
+          </div>
+        </div>
+
+        <!-- 第3步：算式解答 -->
+        <div id="section3" class="hidden">
+          <h3 style="color: #667eea; margin-top: 0">📐 算式解答</h3>
+
+          <div class="formula-step">
+            <h4>第一步：算出1个甜甜圈的价格</h4>
+            <div class="formula" id="formula-unit">RM3.90 ÷ 6 = RM0.65</div>
+            <div class="explanation">💡 把总价除以数量，得出每个甜甜圈RM0.65</div>
+          </div>
+
+          <div class="formula-step" id="step3-2" style="opacity: 0.3">
+            <h4>第二步：算出10个甜甜圈的价格</h4>
+            <div class="formula" id="formula-total">RM0.65 × 10 = RM6.50</div>
+            <div class="explanation">💡 用单价乘以数量，得出10个甜甜圈RM6.50</div>
+          </div>
+
+          <div class="hint-box" id="hint3">
+            <p><strong>💡 计算顺序：</strong></p>
+            <p>1. 先除法：找出单价（1个多少钱）</p>
+            <p>2. 再乘法：算出总价（10个多少钱）</p>
+          </div>
+
+          <div class="button-group">
+            <button class="btn btn-secondary" id="hint3-btn">需要提示</button>
+            <button class="btn btn-primary" id="reveal-btn">显示第二步</button>
+            <button class="btn btn-primary hidden" id="next3-btn">开始练习 →</button>
+          </div>
+        </div>
+
+        <!-- 第4步：互动练习 -->
+        <div id="section4" class="hidden">
+          <div class="question-box">
+            <h3>📝 题目</h3>
+            <p id="question-text-4">6个甜甜圈价格RM3.90。买10个甜甜圈需付多少钱?</p>
+          </div>
+
+          <h3 style="color: #667eea; margin-top: 0">✍️ 互动练习</h3>
+          <p style="color: #6b7280; margin-bottom: 20px">测试一下你学会了吗？</p>
+
+          <!-- 题目1 -->
+          <div class="quiz-question">
+            <h4>题目 1：要算出10个甜甜圈多少钱，应该先做哪一步？</h4>
+            <div class="quiz-options">
+              <div class="quiz-option" data-question="q1" data-answer="a">A. RM0.65 × 10</div>
+              <div class="quiz-option" data-question="q1" data-answer="b">B. RM3.90 ÷ 6</div>
+              <div class="quiz-option" data-question="q1" data-answer="c">C. RM3.90 × 10</div>
+            </div>
+            <div class="feedback" id="feedback1"></div>
+          </div>
+
+          <!-- 题目2 -->
+          <div class="quiz-question">
+            <h4>题目 2：1个甜甜圈多少钱？（写 RM）</h4>
+            <input type="text" inputmode="decimal" class="quiz-input" id="q2-input" placeholder="RM" />
+            <div class="feedback" id="feedback2"></div>
+          </div>
+
+          <!-- 题目3 -->
+          <div class="quiz-question">
+            <h4>题目 3：10个甜甜圈多少钱？（写 RM）</h4>
+            <input type="text" inputmode="decimal" class="quiz-input" id="q3-input" placeholder="RM" />
+            <div class="feedback" id="feedback3"></div>
+          </div>
+
+          <div class="button-group">
+            <button class="btn btn-success" id="submit-btn">提交答案</button>
+            <button class="btn btn-secondary" id="retry-btn">再试一次</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // =====================
+      // Config
+      // =====================
+      const config = {
+        donutsInBox: 6,
+        boxPrice: 3.9,
+        targetDonuts: 10,
+        page_title: "🍩 甜甜圈价格问题",
+        // 按你的最新要求：题干不包含“问：”
+        question_text: "6个甜甜圈价格RM3.90。买10个甜甜圈需付多少钱?",
+        start_button: "开始学习",
+        next_button: "下一步",
+        hint_button: "需要提示",
+        submit_button: "提交答案",
+        retry_button: "再试一次",
+      };
+
+      // Calculate answers
+      const unitPrice = (config.boxPrice / config.donutsInBox).toFixed(2);
+      const totalPrice = (Number(unitPrice) * config.targetDonuts).toFixed(2);
+
+      let currentStep = 1;
+      let quizAnswers = { q1: null, q2: null, q3: null };
+
+      // =====================
+      // Tiny “tests” (console)
+      // =====================
+      function runTests() {
+        const tests = [];
+
+        // Test case 1: known expected values
+        tests.push({
+          name: "unitPrice should be 0.65",
+          pass: unitPrice === "0.65",
+          actual: unitPrice,
+        });
+        tests.push({
+          name: "totalPrice should be 6.50",
+          pass: totalPrice === "6.50",
+          actual: totalPrice,
+        });
+
+        // Test case 2: formatting always 2 decimals
+        // FIX: regex should use single backslashes in a JS regex literal
+        tests.push({
+          name: "unitPrice has 2 decimals",
+          pass: /^\d+\.\d{2}$/.test(unitPrice),
+          actual: unitPrice,
+        });
+        tests.push({
+          name: "totalPrice has 2 decimals",
+          pass: /^\d+\.\d{2}$/.test(totalPrice),
+          actual: totalPrice,
+        });
+
+        // Additional tests
+        // Test case 3: numeric correctness (within rounding to 2 decimals)
+        const expectedUnit = config.boxPrice / config.donutsInBox;
+        const expectedTotal = expectedUnit * config.targetDonuts;
+        const eps = 1e-9;
+
+        tests.push({
+          name: "unitPrice numeric equals boxPrice/donutsInBox (2dp)",
+          pass: Math.abs(Number(unitPrice) - Number(expectedUnit.toFixed(2))) < eps,
+          actual: { unitPrice, expected: expectedUnit.toFixed(2) },
+        });
+
+        tests.push({
+          name: "totalPrice numeric equals unitPrice*targetDonuts (2dp)",
+          pass: Math.abs(Number(totalPrice) - Number((Number(unitPrice) * config.targetDonuts).toFixed(2))) < eps,
+          actual: { totalPrice, expected: (Number(unitPrice) * config.targetDonuts).toFixed(2) },
+        });
+
+        // Test case 4: question text has no "问："
+        tests.push({
+          name: 'question_text should not contain "问："',
+          pass: !config.question_text.includes("问："),
+          actual: config.question_text,
+        });
+
+        const failed = tests.filter((t) => !t.pass);
+        if (failed.length) {
+          console.error("[Tests failed]", failed);
+          // surface a hard error so environments that treat console errors as failures can catch it
+          throw new Error("[Tests failed]");
+        } else {
+          console.log("[Tests passed]", tests.map((t) => t.name));
+        }
+      }
+
+      // =====================
+      // Helpers
+      // =====================
+      function $(id) {
+        return document.getElementById(id);
+      }
+
+      function on(el, event, handler) {
+        if (!el) return;
+        el.addEventListener(event, handler);
+      }
+
+      function showSection(stepNum) {
+        for (let i = 1; i <= 4; i++) {
+          const section = $("section" + i);
+          const step = $("step" + i);
+          if (section) section.classList.add("hidden");
+          if (step) {
+            step.classList.remove("active");
+            // no completed highlight in this mode
+            step.classList.remove("completed");
+          }
+        }
+        const activeSection = $("section" + stepNum);
+        const activeStep = $("step" + stepNum);
+        if (activeSection) activeSection.classList.remove("hidden");
+        if (activeStep) activeStep.classList.add("active");
+        currentStep = stepNum;
+      }
+
+      // =====================
+      // Boot
+      // =====================
+      document.addEventListener("DOMContentLoaded", () => {
+        runTests();
+
+        // Fill dynamic text
+        const pageTitle = $("page-title");
+        const qText1 = $("question-text");
+        const qText4 = $("question-text-4");
+        if (pageTitle) pageTitle.textContent = config.page_title;
+        if (qText1) qText1.textContent = config.question_text;
+        if (qText4) qText4.textContent = config.question_text;
+
+        // Update formulas to match config (in case config changes)
+        const fUnit = $("formula-unit");
+        const fTotal = $("formula-total");
+        if (fUnit) fUnit.textContent = `RM${config.boxPrice.toFixed(2)} ÷ ${config.donutsInBox} = RM${unitPrice}`;
+        if (fTotal) fTotal.textContent = `RM${unitPrice} × ${config.targetDonuts} = RM${totalPrice}`;
+
+        // Optional SDK init
+        if (window.elementSdk) {
+          window.elementSdk.init({
+            defaultConfig: config,
+            onConfigChange: async (newConfig) => {
+              // Apply updated config text
+              if (pageTitle) pageTitle.textContent = newConfig.page_title || config.page_title;
+              if (qText1) qText1.textContent = newConfig.question_text || config.question_text;
+              if (qText4) qText4.textContent = newConfig.question_text || config.question_text;
+
+              const startBtn = $("start-btn");
+              if (startBtn) startBtn.textContent = (newConfig.start_button || config.start_button) + " →";
+
+              const nextBtns = document.querySelectorAll('[id^="next"]');
+              nextBtns.forEach((btn) => {
+                if (btn.textContent.includes("→")) {
+                  btn.textContent = (newConfig.next_button || config.next_button) + " →";
+                }
+              });
+
+              const hintBtns = document.querySelectorAll('[id$="-btn"][id*="hint"]');
+              hintBtns.forEach((btn) => (btn.textContent = newConfig.hint_button || config.hint_button));
+
+              const submitBtn = $("submit-btn");
+              const retryBtn = $("retry-btn");
+              if (submitBtn) submitBtn.textContent = newConfig.submit_button || config.submit_button;
+              if (retryBtn) retryBtn.textContent = newConfig.retry_button || config.retry_button;
+            },
+            mapToCapabilities: () => ({
+              recolorables: [],
+              borderables: [],
+              fontEditable: undefined,
+              fontSizeable: undefined,
+            }),
+            mapToEditPanelValues: (cfg) =>
+              new Map([
+                ["page_title", cfg.page_title || config.page_title],
+                ["question_text", cfg.question_text || config.question_text],
+                ["start_button", cfg.start_button || config.start_button],
+                ["next_button", cfg.next_button || config.next_button],
+                ["hint_button", cfg.hint_button || config.hint_button],
+                ["submit_button", cfg.submit_button || config.submit_button],
+                ["retry_button", cfg.retry_button || config.retry_button],
+              ]),
+          });
+        }
+
+        // Step tabs: clickable anytime (revisit/复习)
+        for (let i = 1; i <= 4; i++) {
+          const stepEl = $("step" + i);
+          if (stepEl) {
+            stepEl.setAttribute("role", "button");
+            stepEl.setAttribute("tabindex", "0");
+            on(stepEl, "click", () => showSection(i));
+            on(stepEl, "keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                showSection(i);
+              }
+            });
+          }
+        }
+
+        // Wire buttons (defensive)
+        on($("start-btn"), "click", () => showSection(2));
+        on($("hint2-btn"), "click", () => $("hint2")?.classList.add("show"));
+        on($("next2-btn"), "click", () => showSection(3));
+        on($("hint3-btn"), "click", () => $("hint3")?.classList.add("show"));
+
+        on($("reveal-btn"), "click", () => {
+          const s = $("step3-2");
+          if (s) s.style.opacity = "1";
+          $("reveal-btn")?.classList.add("hidden");
+          $("next3-btn")?.classList.remove("hidden");
+        });
+
+        on($("next3-btn"), "click", () => showSection(4));
+
+        // MCQ options
+        document.querySelectorAll(".quiz-option").forEach((option) => {
+          on(option, "click", function () {
+            const question = this.dataset.question;
+            const answer = this.dataset.answer;
+
+            document.querySelectorAll(`[data-question="${question}"]`).forEach((opt) => opt.classList.remove("selected"));
+            this.classList.add("selected");
+            quizAnswers[question] = answer;
+          });
+        });
+
+        // Submit
+        on($("submit-btn"), "click", () => {
+          let allCorrect = true;
+
+          // Q1
+          const feedback1 = $("feedback1");
+          if (quizAnswers.q1 === "b") {
+            if (feedback1) {
+              feedback1.className = "feedback success show";
+              feedback1.textContent = "✅ 正确！要先用RM3.90÷6算出1个甜甜圈的价格。";
+            }
+          } else {
+            if (feedback1) {
+              feedback1.className = "feedback error show";
+              feedback1.textContent = "❌ 不对哦。想一想：要知道10个多少钱，是不是要先知道1个多少钱？";
+            }
+            allCorrect = false;
+          }
+
+          // Q2
+          const q2Value = $("q2-input")?.value.trim() || "";
+          const feedback2 = $("feedback2");
+          if (q2Value === `RM${unitPrice}`) {
+            if (feedback2) {
+              feedback2.className = "feedback success show";
+              feedback2.textContent = `✅ 正确！RM3.90÷6 = RM${unitPrice}`;
+            }
+          } else {
+            if (feedback2) {
+              feedback2.className = "feedback error show";
+              feedback2.textContent = "❌ 不对哦。用RM3.90÷6来计算。";
+            }
+            allCorrect = false;
+          }
+
+          // Q3
+          const q3Value = $("q3-input")?.value.trim() || "";
+          const feedback3 = $("feedback3");
+          if (q3Value === `RM${totalPrice}`) {
+            if (feedback3) {
+              feedback3.className = "feedback success show";
+              feedback3.textContent = `✅ 正确！RM${unitPrice} × 10 = RM${totalPrice}`;
+            }
+          } else {
+            if (feedback3) {
+              feedback3.className = "feedback error show";
+              feedback3.textContent = `❌ 不对哦。用单价RM${unitPrice}×10来计算。`;
+            }
+            allCorrect = false;
+          }
+
+          if (allCorrect) {
+            setTimeout(() => {
+              const celebration = document.createElement("div");
+              celebration.style.cssText =
+                "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:40px;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;z-index:1000;pointer-events:none;";
+              celebration.innerHTML =
+                '<h2 style="color:#10b981;margin:0 0 10px 0;font-size:32px;">🎉 太棒了！</h2><p style="color:#6b7280;margin:0;font-size:18px;">你已经完全掌握了！</p>';
+              document.body.appendChild(celebration);
+              setTimeout(() => celebration.remove(), 3000);
+            }, 500);
+          }
+        });
+
+        // Retry
+        on($("retry-btn"), "click", () => {
+          quizAnswers = { q1: null, q2: null, q3: null };
+          document.querySelectorAll(".quiz-option").forEach((opt) => opt.classList.remove("selected"));
+          if ($("q2-input")) $("q2-input").value = "";
+          if ($("q3-input")) $("q3-input").value = "";
+          document.querySelectorAll(".feedback").forEach((fb) => fb.classList.remove("show"));
+        });
+      });
+    </script>
+  </body>
+</html>
