@@ -12,6 +12,7 @@
       - Defensive guards prevent null.addEventListener crashes if an element is missing.
       - Step 4 shows the question (and removes “问：” as requested).
       - Fixed runTests() regex so tests pass.
+      - UPDATED: display multiplication as “10 × RM…” (commutative form) where requested.
     -->
 
     <script src="/_sdk/element_sdk.js"></script>
@@ -402,16 +403,6 @@
           font-size: 15px;
         }
       }
-        .formula {
-          font-size: 18px;
-        }
-
-        .btn {
-          min-width: 100px;
-          padding: 12px 20px;
-          font-size: 15px;
-        }
-      }
     </style>
 
     <style>
@@ -500,7 +491,8 @@
 
           <div class="formula-step" id="step3-2" style="opacity: 0.3">
             <h4>第二步：算出10个甜甜圈的价格</h4>
-            <div class="formula" id="formula-total">RM0.65 × 10 = RM6.50</div>
+            <!-- UPDATED: RM0.65 × 10 -> 10 × RM0.65 -->
+            <div class="formula" id="formula-total">10 × RM0.65 = RM6.50</div>
             <div class="explanation">💡 用单价乘以数量，得出10个甜甜圈RM6.50</div>
           </div>
 
@@ -531,9 +523,11 @@
           <div class="quiz-question">
             <h4>题目 1：要算出10个甜甜圈多少钱，应该先做哪一步？</h4>
             <div class="quiz-options">
-              <div class="quiz-option" data-question="q1" data-answer="a">A. RM0.65 × 10</div>
+              <!-- UPDATED: RM0.65 × 10 -> 10 × RM0.65 -->
+              <div class="quiz-option" data-question="q1" data-answer="a">A. 10 × RM0.65</div>
               <div class="quiz-option" data-question="q1" data-answer="b">B. RM3.90 ÷ 6</div>
-              <div class="quiz-option" data-question="q1" data-answer="c">C. RM3.90 × 10</div>
+              <!-- UPDATED: RM3.90 × 10 -> 10 × RM3.90 -->
+              <div class="quiz-option" data-question="q1" data-answer="c">C. 10 × RM3.90</div>
             </div>
             <div class="feedback" id="feedback1"></div>
           </div>
@@ -604,7 +598,6 @@
         });
 
         // Test case 2: formatting always 2 decimals
-        // FIX: regex should use single backslashes in a JS regex literal
         tests.push({
           name: "unitPrice has 2 decimals",
           pass: /^\d+\.\d{2}$/.test(unitPrice),
@@ -617,9 +610,7 @@
         });
 
         // Additional tests
-        // Test case 3: numeric correctness (within rounding to 2 decimals)
         const expectedUnit = config.boxPrice / config.donutsInBox;
-        const expectedTotal = expectedUnit * config.targetDonuts;
         const eps = 1e-9;
 
         tests.push({
@@ -648,7 +639,7 @@
           actual: q3?.getAttribute("inputmode"),
         });
 
-        // Test case 4: question text has no "问："
+        // Test case: question text has no "问："
         tests.push({
           name: 'question_text should not contain "问："',
           pass: !config.question_text.includes("问："),
@@ -658,7 +649,6 @@
         const failed = tests.filter((t) => !t.pass);
         if (failed.length) {
           console.error("[Tests failed]", failed);
-          // surface a hard error so environments that treat console errors as failures can catch it
           throw new Error("[Tests failed]");
         } else {
           console.log("[Tests passed]", tests.map((t) => t.name));
@@ -684,7 +674,6 @@
           if (section) section.classList.add("hidden");
           if (step) {
             step.classList.remove("active");
-            // no completed highlight in this mode
             step.classList.remove("completed");
           }
         }
@@ -713,7 +702,8 @@
         const fUnit = $("formula-unit");
         const fTotal = $("formula-total");
         if (fUnit) fUnit.textContent = `RM${config.boxPrice.toFixed(2)} ÷ ${config.donutsInBox} = RM${unitPrice}`;
-        if (fTotal) fTotal.textContent = `RM${unitPrice} × ${config.targetDonuts} = RM${totalPrice}`;
+        // UPDATED: RM{unitPrice} × 10 -> 10 × RM{unitPrice}
+        if (fTotal) fTotal.textContent = `${config.targetDonuts} × RM${unitPrice} = RM${totalPrice}`;
 
         // Optional SDK init
         if (window.elementSdk) {
@@ -742,6 +732,10 @@
               const retryBtn = $("retry-btn");
               if (submitBtn) submitBtn.textContent = newConfig.submit_button || config.submit_button;
               if (retryBtn) retryBtn.textContent = newConfig.retry_button || config.retry_button;
+
+              // Also refresh formulas (since config might change numbers)
+              if (fUnit) fUnit.textContent = `RM${(newConfig.boxPrice ?? config.boxPrice).toFixed(2)} ÷ ${newConfig.donutsInBox ?? config.donutsInBox} = RM${unitPrice}`;
+              if (fTotal) fTotal.textContent = `${newConfig.targetDonuts ?? config.targetDonuts} × RM${unitPrice} = RM${totalPrice}`;
             },
             mapToCapabilities: () => ({
               recolorables: [],
@@ -826,7 +820,7 @@
 
           // Q2
           const q2ValueRaw = $("q2-input")?.value ?? "";
-          const q2Value = q2ValueRaw.replace(/\\s+/g, "").toUpperCase();
+          const q2Value = q2ValueRaw.replace(/\s+/g, "").toUpperCase();
           const feedback2 = $("feedback2");
           if (q2Value === `RM${unitPrice}`.toUpperCase()) {
             if (feedback2) {
@@ -843,17 +837,19 @@
 
           // Q3
           const q3ValueRaw = $("q3-input")?.value ?? "";
-          const q3Value = q3ValueRaw.replace(/\\s+/g, "").toUpperCase();
+          const q3Value = q3ValueRaw.replace(/\s+/g, "").toUpperCase();
           const feedback3 = $("feedback3");
           if (q3Value === `RM${totalPrice}`.toUpperCase()) {
             if (feedback3) {
               feedback3.className = "feedback success show";
-              feedback3.textContent = `✅ 正确！RM${unitPrice} × 10 = RM${totalPrice}`;
+              // UPDATED: show as 10 × RM...
+              feedback3.textContent = `✅ 正确！${config.targetDonuts} × RM${unitPrice} = RM${totalPrice}`;
             }
           } else {
             if (feedback3) {
               feedback3.className = "feedback error show";
-              feedback3.textContent = `❌ 不对哦。用单价RM${unitPrice}×10来计算。`;
+              // UPDATED: show as 10 × RM...
+              feedback3.textContent = `❌ 不对哦。用${config.targetDonuts}×RM${unitPrice}来计算。`;
             }
             allCorrect = false;
           }
